@@ -1,0 +1,4 @@
+client.test.js
+.vscodeignore
+**/*.vsix
+node_modules/**

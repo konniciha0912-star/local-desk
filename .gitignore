@@ -1,0 +1,16 @@
+.data/
+.runtime/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.gguf
+*.part
+*.log
+.env
+.env.*
+.DS_Store
+Thumbs.db
+**/node_modules/
+*.vsix
+*.zip

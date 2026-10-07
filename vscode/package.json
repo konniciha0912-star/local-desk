@@ -1,0 +1,86 @@
+{
+  "name": "local-desk",
+  "displayName": "Local Desk",
+  "description": "Local AI explanations, reviewed edits, diffs and experimental completion.",
+  "publisher": "local-desk",
+  "version": "2.0.0",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "main": "./extension.js",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/konniciha0912-star/local-desk.git",
+    "directory": "vscode"
+  },
+  "categories": [
+    "Other"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false
+    },
+    "virtualWorkspaces": {
+      "supported": false
+    }
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "localDesk.explain",
+        "title": "Local Desk: 選択したコードを説明"
+      },
+      {
+        "command": "localDesk.edit",
+        "title": "Local Desk: このファイルの修正を相談"
+      },
+      {
+        "command": "localDesk.complete",
+        "title": "Local Desk: カーソル位置を補完（実験的）"
+      },
+      {
+        "command": "localDesk.undo",
+        "title": "Local Desk: 最後に反映した修正を取り消す"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "localDesk.explain",
+          "when": "editorHasSelection && resourceScheme == file",
+          "group": "localDesk"
+        },
+        {
+          "command": "localDesk.edit",
+          "when": "resourceScheme == file",
+          "group": "localDesk"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Local Desk",
+      "properties": {
+        "localDesk.port": {
+          "type": "number",
+          "default": 8765,
+          "minimum": 1024,
+          "maximum": 65535,
+          "description": "このPCで開いているLocal Deskのポート"
+        },
+        "localDesk.inlineCompletion": {
+          "type": "boolean",
+          "default": false,
+          "description": "実験的なインライン補完。入力ごとにこのPCでAIを使います。重い場合はオフにしてください。"
+        },
+        "localDesk.completionTimeoutMs": {
+          "type": "number",
+          "default": 4000,
+          "minimum": 1000,
+          "maximum": 15000,
+          "description": "補完が遅い場合に停止するまでの時間"
+        }
+      }
+    }
+  }
+}

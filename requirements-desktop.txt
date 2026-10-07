@@ -1,0 +1,2 @@
+# Optional native Windows window. The browser app still needs no packages.
+-r requirements-desktop.lock.txt

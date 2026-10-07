@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Local Desk — 自分のPCで動くAI</title>
+    <link rel="icon" href="/favicon.svg" />
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/vendor/marked.js" defer></script>
+    <script src="/vendor/prism-core.js" data-manual defer></script>
+    <script src="/vendor/prism-clike.js" defer></script>
+    <script src="/vendor/prism-javascript.js" defer></script>
+    <script src="/vendor/prism-python.js" defer></script>
+    <script src="/vendor/prism-json.js" defer></script>
+    <script src="/vendor/prism-css.js" defer></script>
+    <script src="/markdown.js" defer></script>
+    <script src="/app.js" defer></script>
+    <script src="/tools.js" defer></script>
+    <script src="/extensions.js" defer></script>
+  </head>
+  <body>
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="/" aria-label="Local Desk ホーム"
+        ><span class="brand-mark">L</span
+        ><span>Local Desk<small>YOUR LOCAL AI WORKSPACE</small></span></a
+      >
+      <button class="new-chat" id="new-chat">＋ 新しい会話</button>
+      <div class="section-label">会話履歴</div>
+      <input
+        id="conversation-search"
+        type="search"
+        placeholder="会話を検索"
+        aria-label="会話を検索"
+        maxlength="200"
+      />
+      <nav id="conversations" aria-label="会話履歴"></nav>
+      <button class="text-button" id="trash-open">ゴミ箱を開く</button>
+      <button class="text-button" id="templates-open">
+        テンプレート・定型処理
+      </button>
+      <div class="sidebar-bottom">
+        <button class="text-button" id="maintenance-open">
+          診断・バックアップ
+        </button>
+        <span class="local-dot"></span> このPC内で処理・保存<button
+          class="text-button"
+          id="settings-open"
+        >
+          設定
+        </button>
+      </div>
+    </aside>
+    <main>
+      <header class="topbar">
+        <button
+          class="icon-button menu-toggle"
+          id="menu-toggle"
+          aria-label="メニュー"
+        >
+          ☰
+        </button>
+        <div class="title-area">
+          <span class="eyebrow">WORKSPACE</span>
+          <div class="title-row">
+            <h1 id="chat-title">新しい会話</h1>
+            <button
+              class="icon-button"
+              id="pin-chat"
+              aria-label="会話をピン留め"
+              title="会話をピン留め"
+            >
+              ☆
+            </button>
+            <button
+              class="icon-button"
+              id="tag-chat"
+              aria-label="会話のタグ"
+              title="会話のタグ"
+            >
+              ＃
+            </button>
+            <button
+              class="icon-button"
+              id="rename-open"
+              aria-label="会話の名前を変更"
+              title="会話の名前を変更"
+            >
+              ✎
+            </button>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button
+            type="button"
+            class="connection"
+            id="connection"
+            title="接続設定を開く"
+          >
+            接続確認中</button
+          ><button
+            class="icon-button"
+            id="changes-open"
+            title="変更履歴"
+            aria-label="変更履歴"
+          >
+            ↶</button
+          ><button
+            class="icon-button"
+            id="export"
+            title="会話を保存"
+            aria-label="会話を保存"
+          >
+            ↓</button
+          ><button
+            class="icon-button"
+            id="delete-chat"
+            title="会話を削除"
+            aria-label="会話を削除"
+          >
+            ×
+          </button>
+        </div>
+      </header>
+      <div class="connection-help" id="connection-help" hidden>
+        <div>
+          <strong id="connection-help-title">モデルを準備してください</strong>
+          <p id="connection-help-text">
+            設定でモデルを選び直して、接続を再確認してください。
+          </p>
+        </div>
+        <button class="secondary-button" id="connection-settings">
+          接続設定</button
+        ><button class="text-button" id="connection-retry">再確認</button>
+      </div>
+      <div class="workspace">
+        <section class="chat-pane">
+          <div
+            class="messages"
+            id="messages"
+            role="log"
+            tabindex="0"
+            aria-label="会話の本文"
+            aria-live="polite"
+          ></div>
+          <button class="latest-button" id="jump-latest" hidden>
+            最新の回答へ ↓
+          </button>
+          <div class="composer-wrap">
+            <div class="mode-row" role="group" aria-label="処理モード">
+              <button class="mode active" data-mode="chat">会話</button
+              ><button class="mode" data-mode="summary">要約</button
+              ><button class="mode" data-mode="translate">翻訳</button
+              ><button class="mode" data-mode="code">コード説明</button
+              ><button class="mode" data-mode="edit">コード修正</button>
+              <button class="mode" data-mode="extract">JSON抽出</button>
+              <select id="task-preset" aria-label="今回の回答の設定">
+                <option value="auto">用途に合わせる</option>
+                <option value="standard">モデルの標準設定</option>
+                <option value="quick">短く・素早く</option>
+                <option value="careful">詳しく考える</option>
+              </select>
+            </div>
+            <form id="composer" class="composer">
+              <div class="attachments" id="attachments"></div>
+              <textarea
+                id="prompt"
+                rows="3"
+                maxlength="20000"
+                placeholder="何を手伝いましょうか？"
+                aria-label="質問"
+              ></textarea>
+              <div class="composer-footer">
+                <button type="button" class="text-button" id="project-toggle">
+                  ＋ ファイルを参照</button
+                ><button type="button" class="text-button" id="preview-open">
+                  送信内容を確認</button
+                ><button type="button" class="text-button" id="compact-chat">
+                  会話を要約して続ける</button
+                ><button type="button" class="text-button" id="clipboard-paste">
+                  クリップボードから</button
+                ><span id="generation-info"></span
+                ><button type="button" class="stop-button" id="stop" hidden>
+                  停止</button
+                ><button type="submit" class="send-button" id="send" disabled>
+                  送信 <span>↑</span>
+                </button>
+              </div>
+            </form>
+            <div class="composer-hint">
+              <span id="model-label">モデル未選択</span
+              ><span id="send-hint">Enterで送信 · Shift+Enterで改行</span>
+            </div>
+          </div>
+        </section>
+        <aside class="project-pane" id="project-pane" hidden>
+          <div class="panel-head">
+            <h2>参照ファイル</h2>
+            <button
+              class="icon-button"
+              id="project-close"
+              aria-label="ファイルパネルを閉じる"
+            >
+              ×
+            </button>
+          </div>
+          <p class="panel-copy">
+            選んだファイルだけを、今回の質問に添付します。最大6ファイル。
+          </p>
+          <label for="project-root">プロジェクトのフォルダー</label
+          ><input id="project-root" placeholder="C:\Projects\my-app" />
+          <button class="secondary-button" id="project-pick">
+            フォルダーを選ぶ
+          </button>
+          <p class="field-hint">
+            フォルダーやファイルをこの欄にドロップできます。
+          </p>
+          <select id="recent-projects" aria-label="最近使ったフォルダー">
+            <option value="">最近使ったフォルダー</option>
+          </select>
+          <button class="secondary-button" id="project-load">
+            ファイルを読み込む
+          </button>
+          <input
+            id="file-filter"
+            placeholder="ファイル名で検索"
+            aria-label="ファイルを検索"
+          />
+          <div id="files" class="file-list"></div>
+          <div id="project-info" class="muted"></div>
+          <button class="secondary-button" id="project-overview">
+            プロジェクトの概要と参照候補
+          </button>
+          <button class="secondary-button" id="project-tests-open">
+            テストコマンドを確認して実行
+          </button>
+          <label for="project-search-query">関連する箇所を探す</label
+          ><input
+            id="project-search-query"
+            maxlength="500"
+            placeholder="例: 平均を計算する関数"
+          />
+          <button class="secondary-button" id="project-search">
+            選択プロジェクト内で検索
+          </button>
+          <label for="new-file-path">作成するファイル（相対パス）</label
+          ><input id="new-file-path" placeholder="例: src/helper.py" />
+          <button class="secondary-button" id="new-file-add">
+            新規作成先を追加
+          </button>
+          <button class="text-button" id="project-forget">
+            参照の選択とフォルダーの記憶を解除
+          </button>
+        </aside>
+      </div>
+    </main>
+    <dialog id="settings-dialog">
+      <form id="settings-form">
+        <div class="panel-head">
+          <h2>設定</h2>
+          <button
+            type="button"
+            class="icon-button"
+            id="settings-close"
+            aria-label="設定を閉じる"
+          >
+            ×
+          </button>
+        </div>
+        <p class="panel-copy">このPCに入っているモデルを切り替えられます。</p>
+        <div
+          id="profiles"
+          class="profile-row"
+          role="group"
+          aria-label="モデル切り替え"
+        ></div>
+        <p id="profile-status" class="field-hint" role="status">
+          モデルの読み込みには数秒〜1分ほどかかります。
+        </p>
+        <button type="button" class="secondary-button" id="profile-reset">
+          このモデルの設定を初期値に戻す
+        </button>
+        <label for="endpoint">接続先</label><input id="endpoint" required />
+        <div class="field-row">
+          <label for="model">モデル</label
+          ><button type="button" class="text-button" id="models-refresh">
+            一覧を更新
+          </button>
+        </div>
+        <select id="model"></select>
+        <label for="response-preset">回答の設定</label>
+        <select id="response-preset">
+          <option value="standard">標準</option>
+          <option value="quick">短く・素早く</option>
+          <option value="careful">詳しく・思考を使う</option>
+        </select>
+        <details id="advanced-settings">
+          <summary>詳細設定</summary>
+          <div class="settings-grid">
+            <div>
+              <label for="temperature">温度（0〜2）</label
+              ><input
+                id="temperature"
+                type="number"
+                min="0"
+                max="2"
+                step="0.1"
+              />
+            </div>
+            <div>
+              <label for="max-tokens">最大出力</label
+              ><input
+                id="max-tokens"
+                type="number"
+                min="128"
+                max="4096"
+                step="128"
+              />
+            </div>
+          </div>
+          <label for="context-length">モデル読込時のコンテキスト長</label
+          ><select id="context-length">
+            <option value="4096">4,096</option>
+            <option value="8192">8,192</option>
+            <option value="16384">16,384</option>
+            <option value="32768">32,768</option>
+          </select>
+          <p class="field-hint">
+            登録済みモデルは読込時の値で固定です。外部サーバーでは実際の読込設定と同じ値にします。
+          </p>
+          <label class="thinking-toggle"
+            ><input id="thinking" type="checkbox" /> 思考モードを使う</label
+          >
+          <p class="field-hint">
+            Qwen・Ornithは素早い回答を優先して標準オフ、Bonsaiは精度を優先して標準オンです。Bonsaiの思考量は出力枠の半分までに制限します。オンでは回答までの待ち時間が増えます。
+          </p>
+          <label for="system-prompt">基本の指示</label
+          ><textarea id="system-prompt" rows="3" maxlength="3000"></textarea>
+        </details>
+        <label for="theme">画面の色</label
+        ><select id="theme">
+          <option value="system">PCの設定に合わせる</option>
+          <option value="light">明るい</option>
+          <option value="dark">暗い</option>
+        </select>
+        <label for="font-size">文字の大きさ</label
+        ><select id="font-size">
+          <option value="14">標準</option>
+          <option value="16">大きめ</option>
+          <option value="18">大きい</option>
+        </select>
+        <label class="thinking-toggle"
+          ><input id="enter-send" type="checkbox" /> Enterキーで送信する</label
+        >
+        <p class="field-hint">
+          オフにするとEnterは改行、Ctrl+Enter /
+          ⌘+Enterで送信します。入力途中の質問はこのブラウザに自動保存します。
+        </p>
+        <div class="dialog-actions">
+          <button type="submit" class="send-button" id="settings-save">
+            保存する
+          </button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="rename-dialog">
+      <form id="rename-form">
+        <div class="panel-head">
+          <h2>会話の名前を変更</h2>
+          <button
+            type="button"
+            class="icon-button"
+            id="rename-close"
+            aria-label="名前変更を閉じる"
+          >
+            ×
+          </button>
+        </div>
+        <label for="conversation-name">会話の名前</label
+        ><input id="conversation-name" maxlength="120" required />
+        <div class="dialog-actions">
+          <button type="submit" class="send-button" id="rename-save">
+            名前を保存
+          </button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="changes-dialog">
+      <div class="panel-head">
+        <h2>変更履歴</h2>
+        <button
+          class="icon-button"
+          id="changes-close"
+          aria-label="変更履歴を閉じる"
+        >
+          ×
+        </button>
+      </div>
+      <p class="panel-copy">
+        反映後に編集されていないファイルを、バックアップから戻せます。最新30件。
+      </p>
+      <div id="changes-list"></div>
+    </dialog>
+    <div class="toast" id="toast" role="status" hidden></div>
+    <dialog id="maintenance-dialog">
+      <div class="panel-head">
+        <h2>診断・バックアップ</h2>
+        <button
+          class="icon-button"
+          id="maintenance-close"
+          aria-label="診断を閉じる"
+        >
+          ×
+        </button>
+      </div>
+      <p id="app-version" class="panel-copy"></p>
+      <div class="profile-row">
+        <button class="secondary-button" id="diagnostics-refresh">
+          診断を更新</button
+        ><button class="secondary-button" id="diagnostics-export">
+          診断を書き出す</button
+        ><button class="secondary-button" id="runtime-verify">
+          導入ファイルを再検証
+        </button>
+      </div>
+      <div id="diagnostics-result" role="status"></div>
+      <h3>個人用バックアップ</h3>
+      <p class="field-hint">
+        会話・設定・変更履歴を保存します。バックアップには個人の文章やコードが含まれます。
+      </p>
+      <button class="secondary-button" id="backup-create">
+        バックアップを作成して保存
+      </button>
+      <label for="restore-path">復元するZIPのパス</label
+      ><input id="restore-path" placeholder="バックアップZIPの絶対パス" />
+      <div class="profile-row">
+        <button class="secondary-button" id="restore-pick">ZIPを選ぶ</button
+        ><button class="secondary-button" id="backup-restore">復元する</button>
+      </div>
+      <p id="maintenance-status" role="status" class="field-hint"></p>
+    </dialog>
+    <dialog id="scope-dialog">
+      <div class="panel-head">
+        <h2>AIに渡す内容</h2>
+        <button
+          class="icon-button"
+          id="scope-close"
+          aria-label="プレビューを閉じる"
+        >
+          ×
+        </button>
+      </div>
+      <label for="history-limit">過去のメッセージを使う数（最大100）</label
+      ><input type="number" id="history-limit" min="0" max="100" value="30" />
+      <div id="scope-ranges"></div>
+      <button class="secondary-button" id="scope-refresh">
+        範囲を変えて再確認
+      </button>
+      <p id="scope-info" role="status"></p>
+      <div id="scope-sources"></div>
+      <details>
+        <summary>送信する原文を確認</summary>
+        <pre id="scope-content"></pre>
+      </details>
+      <div class="dialog-actions">
+        <button class="send-button" id="scope-send">この内容で送信</button>
+      </div>
+    </dialog>
+    <dialog id="organize-dialog">
+      <div class="panel-head">
+        <h2 id="organize-title">会話の整理</h2>
+        <button
+          class="icon-button"
+          id="organize-close"
+          aria-label="整理を閉じる"
+        >
+          ×
+        </button>
+      </div>
+      <div id="organize-content"></div>
+    </dialog>
+    <dialog id="templates-dialog">
+      <div class="panel-head">
+        <h2>テンプレート・定型処理</h2>
+        <button
+          class="icon-button"
+          id="templates-close"
+          aria-label="テンプレートを閉じる"
+        >
+          ×
+        </button>
+      </div>
+      <p class="field-hint">
+        現在の入力をテンプレートの {input}
+        に入れます。送信前に文章を編集できます。
+      </p>
+      <div id="templates-list"></div>
+      <button class="secondary-button" id="template-new">
+        ＋ テンプレートを作る
+      </button>
+      <form id="template-form" hidden>
+        <label for="template-name">名前</label
+        ><input id="template-name" maxlength="60" required />
+        <label for="template-mode">使い方</label
+        ><select id="template-mode">
+          <option value="chat">会話</option>
+          <option value="summary">要約</option>
+          <option value="translate">翻訳</option>
+          <option value="code">コード説明</option>
+          <option value="edit">コード修正</option>
+          <option value="extract">JSON抽出</option>
+        </select>
+        <label for="template-prompt">依頼文（文章を入れる場所は {input}）</label
+        ><textarea
+          id="template-prompt"
+          rows="6"
+          maxlength="6000"
+          required
+        ></textarea>
+        <button class="send-button" type="submit">テンプレートを保存</button>
+      </form>
+    </dialog>
+  </body>
+</html>

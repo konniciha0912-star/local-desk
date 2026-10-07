@@ -1,0 +1,56 @@
+[
+  {
+    "name": "marked.js",
+    "url": "https://cdn.jsdelivr.net/npm/marked@15.0.12/lib/marked.umd.js",
+    "sha256": "d7931d1cd7bf727dd756c871637edcc9e0f8538003b927368400ec1ee47a9dd9",
+    "size": 73384
+  },
+  {
+    "name": "marked-LICENSE.txt",
+    "url": "https://cdn.jsdelivr.net/npm/marked@15.0.12/LICENSE.md",
+    "sha256": "8e3a3f82f59a60958f56ca08f445647c32a4733dc7ca6c2c46f6eb898471ab9c",
+    "size": 2942
+  },
+  {
+    "name": "prism-core.js",
+    "url": "https://cdn.jsdelivr.net/npm/prismjs@1.30.0/components/prism-core.min.js",
+    "sha256": "6caad316dd991f24f8004e0b9c19c055cb5829ff65e973fbee406f96d81b8e7e",
+    "size": 7461
+  },
+  {
+    "name": "prism-clike.js",
+    "url": "https://cdn.jsdelivr.net/npm/prismjs@1.30.0/components/prism-clike.min.js",
+    "sha256": "c76ba4e240932bdc75546be30e550f5ba5e13815ff71511c76e9e27ac3072444",
+    "size": 708
+  },
+  {
+    "name": "prism-javascript.js",
+    "url": "https://cdn.jsdelivr.net/npm/prismjs@1.30.0/components/prism-javascript.min.js",
+    "sha256": "0345ea83e12b7b974e953c79a64dea35a40308309449db70b82020fb688ac321",
+    "size": 4611
+  },
+  {
+    "name": "prism-python.js",
+    "url": "https://cdn.jsdelivr.net/npm/prismjs@1.30.0/components/prism-python.min.js",
+    "sha256": "ed4385685bcf2d4935c8dbbab4bde16603da1329e092d2bf36c3dadd67e9a85c",
+    "size": 2113
+  },
+  {
+    "name": "prism-json.js",
+    "url": "https://cdn.jsdelivr.net/npm/prismjs@1.30.0/components/prism-json.min.js",
+    "sha256": "956d86baa5ae7ec4106758f354ac2d140bdcd7fc103dece02f73ed12b8d663e4",
+    "size": 449
+  },
+  {
+    "name": "prism-css.js",
+    "url": "https://cdn.jsdelivr.net/npm/prismjs@1.30.0/components/prism-css.min.js",
+    "sha256": "8c9760dba7f26ea842016919544dd9b73a78a36d5b07a1e9842c333ed18ab6ae",
+    "size": 1232
+  },
+  {
+    "name": "prism-LICENSE.txt",
+    "url": "https://cdn.jsdelivr.net/npm/prismjs@1.30.0/LICENSE",
+    "sha256": "2b947f0901a7ffcf08a89957da9783c0e9c6e72cb6ce8e959f501ab5409e4d2b",
+    "size": 1066
+  }
+]
