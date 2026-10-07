@@ -2,6 +2,6 @@
   "name": "local-desk-ui-tests",
   "private": true,
   "version": "2.0.0",
-  "scripts": { "test": "node --test ui.test.cjs" },
+  "scripts": { "test": "node --test *.test.cjs" },
   "devDependencies": { "jsdom": "26.1.0" }
 }

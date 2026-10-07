@@ -1,0 +1,199 @@
+:root {
+  color-scheme: dark;
+  font:
+    14px "Yu Gothic UI",
+    system-ui,
+    sans-serif;
+  color: #eaf5f0;
+  background: #162c26;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  border: 1px solid #406354;
+  border-radius: 14px;
+  overflow: hidden;
+}
+header {
+  display: flex;
+  align-items: center;
+  height: 66px;
+  padding: 7px;
+  gap: 2px;
+}
+button {
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  border: 0;
+  background: none;
+  border-radius: 9px;
+  padding: 7px;
+}
+button:hover {
+  background: #304f42;
+}
+button:focus-visible {
+  outline: 2px solid #b1edac;
+  outline-offset: -2px;
+}
+#toggle {
+  display: flex;
+  text-align: left;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  padding: 4px;
+}
+.caption {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.caption strong {
+  letter-spacing: 0.5px;
+}
+.caption small {
+  font-size: 11px;
+  color: #afcabb;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mascot {
+  display: block;
+  position: relative;
+  flex-shrink: 0;
+  width: 44px;
+  height: 40px;
+  border-radius: 16px 16px 11px 11px;
+  background: #b1edac;
+  box-shadow: inset 0 -5px #8dcc88;
+}
+.mascot i {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 4px;
+  height: 6px;
+  border-radius: 50%;
+  background: #204b37;
+  animation: blink 7s infinite;
+}
+.mascot i:nth-child(2) {
+  left: 27px;
+}
+.mascot b {
+  position: absolute;
+  top: 15px;
+  left: 18px;
+  color: #204b37;
+}
+.busy .mascot {
+  animation: breathe 1.6s infinite;
+}
+@keyframes blink {
+  0%,
+  94%,
+  98%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.1);
+  }
+}
+@keyframes breathe {
+  50% {
+    transform: translateY(-2px);
+  }
+}
+#normal,
+#quit {
+  font-size: 19px;
+}
+section {
+  padding: 14px 20px 20px;
+  height: 390px;
+  overflow: auto;
+  border-top: 1px solid #365448;
+}
+section[hidden] {
+  display: none;
+}
+.intro {
+  display: flex;
+  justify-content: space-between;
+  color: #acc7b6;
+  font-size: 11px;
+}
+.pill {
+  letter-spacing: 1.4px;
+}
+h1 {
+  font-size: 21px;
+  margin: 12px 0 5px;
+}
+#model {
+  font-size: 12px;
+  color: #aac2b5;
+  margin: 0 0 16px;
+}
+article {
+  padding: 14px;
+  background: #203b30;
+  border-radius: 12px;
+}
+h2 {
+  font-size: 12px;
+  color: #b1edac;
+  margin: 0;
+}
+#summary {
+  white-space: pre-wrap;
+  line-height: 1.65;
+  max-height: 100px;
+  overflow: auto;
+}
+ul {
+  padding-left: 18px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.checks,
+.hint {
+  font-size: 11px;
+  color: #b4cabd;
+}
+#error {
+  color: #ffc6ae;
+  font-size: 12px;
+}
+footer {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin: 10px 0;
+}
+#chat {
+  background: #b1edac;
+  color: #163323;
+}
+#cancel {
+  background: #734536;
+}
+.hint {
+  display: block;
+}
+button[hidden] {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mascot,
+  .mascot i {
+    animation: none !important;
+  }
+}

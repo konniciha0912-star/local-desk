@@ -10,7 +10,7 @@ BASE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BASE))
 from version import VERSION
 
-ROOT_FILES = '''app.py completion.py context.py desktop.py edits.py engines.py generation.py
+ROOT_FILES = '''app.py companion.py connections.py completion.py context.py desktop.py edits.py engines.py generation.py
 import_worker.py imports.py maintenance.py model_catalog.py persistence.py productivity.py
 project_tests.py projects.py setup_bonsai.py setup_ocr.py setup_voice.py version.py web_sources.py
 Desktop.cmd Install.cmd Install-Desktop.ps1 Start-Bonsai.cmd Start.cmd Start.ps1

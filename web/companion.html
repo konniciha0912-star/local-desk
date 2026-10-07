@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Local Desk 上端バー</title>
+    <link rel="stylesheet" href="/companion.css" />
+    <script src="/companion.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <button id="toggle" aria-expanded="false" aria-label="AIバーを開く">
+        <span class="mascot" aria-hidden="true"><i></i><i></i><b>⌣</b></span
+        ><span class="caption"
+          ><strong>Local Desk</strong
+          ><small id="stage">接続しています…</small></span
+        ></button
+      ><button id="normal" title="通常画面を開く" aria-label="通常画面を開く">
+        ↗</button
+      ><button id="quit" title="AIも終了" aria-label="Local DeskとAIを終了">
+        ×
+      </button>
+    </header>
+    <section id="details" hidden>
+      <div class="intro">
+        <span class="pill">YOUR LOCAL AI</span><span id="elapsed"></span>
+      </div>
+      <h1>いま何をしている？</h1>
+      <p id="model"></p>
+      <article>
+        <h2>最後の作業</h2>
+        <p id="summary">
+          まだ回答はありません。通常画面から話しかけてください。
+        </p>
+        <ul id="files"></ul>
+        <p class="checks" id="checks">テストは実行されていません。</p>
+      </article>
+      <p id="error" role="status"></p>
+      <footer>
+        <button id="chat">会話・修正案を開く</button
+        ><button id="cancel" hidden>生成を停止</button
+        ><button id="collapse">折り畳む ↑</button>
+      </footer>
+      <small class="hint">↗で通常画面へ · ×でAIも終了</small>
+    </section>
+  </body>
+</html>

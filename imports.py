@@ -15,7 +15,7 @@ def run_import(base, path, kind):
     path = Path(path)
     if not path.is_absolute() or not path.is_file() or path.stat().st_size > MAX_INPUT:
         raise ValueError("50MB以下のファイルの絶対パスを選んでください。")
-    suffixes = {"document": {".pdf", ".docx", ".png", ".jpg", ".jpeg", ".bmp", ".webp"}, "audio": {".wav", ".mp3", ".m4a", ".ogg", ".flac", ".webm"}}
+    suffixes = {"document": {".pdf", ".docx", ".png", ".jpg", ".jpeg", ".bmp", ".webp"}, "audio": {".wav", ".mp3", ".m4a", ".ogg", ".flac", ".webm", ".mp4", ".mkv", ".mov"}}
     if kind not in suffixes or path.suffix.lower() not in suffixes[kind]: raise ValueError("対応するファイル形式を選んでください。")
     # stdout is capped by the worker's 20,000-character result. No model-generated command.
     process = subprocess.Popen([sys.executable,str(base / "import_worker.py"),kind,str(path),str(base / ".runtime/voice/base")], stdout=subprocess.PIPE,stderr=subprocess.PIPE,

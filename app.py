@@ -342,16 +342,25 @@ class Application:
         self.generation_lock = threading.Lock()
         self.active_lock = threading.Lock()
         self.active = {}
+        self.last_activity = {}
         self.files_lock = threading.Lock()
         self.engines = EngineManager(BASE, data)
         self.notices.extend(self.engines.catalog.document.notices)
         self.startup_error = ""
         self.desktop_window = None
+        self.desktop_controller = None
+        from connections import Connections
+        self.connections = Connections(data)
         from imports import Recorder
         self.recorder = Recorder(data)
         self.import_lock = threading.Lock()
         from edits import recover
         recover(self)
+        with self.store.connect() as db:
+            row = db.execute("SELECT id,conversation,content,metadata FROM messages WHERE role='assistant' ORDER BY created DESC LIMIT 1").fetchone()
+        if row:
+            metadata = json.loads(row["metadata"])
+            self.last_activity = {"id":row["id"],"conversation":row["conversation"],"summary":(metadata.get("explanation") or row["content"])[:600],"files":metadata.get("files",[]),"error":metadata.get("error",""),"cancelled":metadata.get("cancelled",False),"edits":sum(not edit.get("applied") for edit in metadata.get("edits",[]))}
 
     def switch_profile(self, profile, reset=False):
         if profile not in self.engines.configs():
@@ -650,6 +659,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_json({"token": self.app.token, "settings": self.app.settings_copy(), "version": VERSION, "application": "local-desk", "notices": self.app.notices, "desktop": self.app.engines.standalone, "startup_error": self.app.startup_error})
             if url.path == "/api/diagnostics":
                 return self.send_json(maintenance.diagnostics(self.app))
+            if url.path == "/api/activity":
+                from companion import activity
+                return self.send_json(activity(self.app))
+            if url.path == "/api/connections":
+                return self.send_json(self.app.connections.status())
             if url.path == "/api/templates":
                 return self.send_json(self.app.templates.items)
             if url.path == "/api/backup-download":
@@ -684,6 +698,8 @@ class Handler(BaseHTTPRequestHandler):
             assets = {"/": ("index.html", "text/html"), "/app.js": ("app.js", "text/javascript"), "/tools.js": ("tools.js", "text/javascript"), "/style.css": ("style.css", "text/css"), "/favicon.svg": ("favicon.svg", "image/svg+xml")}
             assets["/markdown.js"] = ("markdown.js", "text/javascript")
             assets["/extensions.js"] = ("extensions.js", "text/javascript")
+            for asset, mime in [("companion.html", "text/html"), ("companion.js", "text/javascript"), ("companion.css", "text/css"), ("connections.js", "text/javascript")]:
+                assets["/" + asset] = (asset, mime)
             vendor_names = {"marked.js", "prism-core.js", "prism-clike.js", "prism-javascript.js", "prism-python.js", "prism-json.js", "prism-css.js"}
             for vendor in vendor_names:
                 assets["/vendor/" + vendor] = ("vendor/" + vendor, "text/javascript")
@@ -709,6 +725,18 @@ class Handler(BaseHTTPRequestHandler):
         try:
             body = self.body()
             self.guard()
+            if self.path == "/api/desktop":
+                if not self.app.desktop_controller:
+                    raise AppError("上端バーはデスクトップ版で利用できます。")
+                try:
+                    return self.send_json(self.app.desktop_controller.action(body.get("action")))
+                except ValueError as exc:
+                    raise AppError(str(exc)) from exc
+            if self.path.startswith("/api/connections/"):
+                try:
+                    return self.send_json(self.app.connections.action(self.path.rsplit("/", 1)[-1], body))
+                except (ValueError, OSError) as exc:
+                    raise AppError(str(exc)) from exc
             if self.path == "/api/clipboard":
                 try:
                     from productivity import clipboard_text
@@ -856,7 +884,10 @@ class Handler(BaseHTTPRequestHandler):
                 if not self.app.generation_lock.acquire(blocking=False): raise AppError("生成が終わってからテストしてください。", 409)
                 try:
                     with self.app.files_lock:
-                        return self.send_json(run(str(body.get("root", "")), body.get("kind"), body.get("confirmed") is True))
+                        result = run(str(body.get("root", "")), body.get("kind"), body.get("confirmed") is True)
+                        with self.app.active_lock:
+                            self.app.last_activity = {"summary": "プロジェクトのテストを実行しました。", "files": [], "verification": "テスト時間切れ" if result["timed_out"] else "テスト成功" if result["exit_code"] == 0 else "テスト失敗", "command": result["command"]}
+                        return self.send_json(result)
                 finally:
                     self.app.generation_lock.release()
             if self.path == "/api/file":
@@ -876,7 +907,7 @@ class Handler(BaseHTTPRequestHandler):
             if self.path == "/api/undo":
                 return self.send_json(self.app.undo(str(body.get("id", ""))))
             if self.path == "/api/cancel":
-                self.app.cancel_active(str(body.get("request_id", "")))
+                self.app.cancel_active(str(body["request_id"]) if body.get("request_id") else None)
                 return self.send_json({"ok": True})
             if self.path == "/api/chat":
                 return self.chat(body)
@@ -909,7 +940,7 @@ class Handler(BaseHTTPRequestHandler):
         request_id = str(body.get("request_id", uuid.uuid4().hex))[:100]
         cancel = threading.Event()
         with self.app.active_lock:
-            self.app.active[request_id] = {"cancel": cancel}
+            self.app.active[request_id] = {"cancel": cancel, "stage": "入力を読み込んでいます", "started": time.monotonic()}
         error, initial_output, repair_attempts = "", "", 0
         output = {"content": "", "reasoning": "", "usage": {}, "finish_reason": ""}
         started, first = time.monotonic(), None
@@ -926,6 +957,9 @@ class Handler(BaseHTTPRequestHandler):
             from generation import stream
             def delta(text, thought):
                 nonlocal first
+                with self.app.active_lock:
+                    if request_id in self.app.active:
+                        self.app.active[request_id]["stage"] = "回答を書いています" if text else "考えています"
                 if first is None:
                     first = time.monotonic() - started
                 self.event("delta", {"content": text, "reasoning": thought})
@@ -985,6 +1019,10 @@ class Handler(BaseHTTPRequestHandler):
                     metadata["structured_warning"] = "JSONとして検証できませんでした。抽出内容を確認して再依頼してください。"
             try:
                 identifier = self.app.store.add(conversation, "assistant", content, metadata)
+                with self.app.active_lock:
+                    self.app.last_activity = {"id": identifier, "conversation": conversation,
+                        "summary": (metadata.get("explanation") or content)[:600], "files": metadata["files"], "error": error,
+                        "cancelled": cancel.is_set(), "edits": len(metadata.get("edits", []))}
                 if body.get("compact") is True and mode == "summary" and content and finish_reason != "length" and not error and not cancel.is_set():
                     with self.app.store.connect() as db:
                         db.execute("UPDATE conversations SET compact_message=? WHERE id=?", (identifier, conversation))
@@ -1037,6 +1075,7 @@ def main():
     finally:
         server.server_close()
         server.application.engines.close()
+        server.application.connections.close()
     return 0
 
 

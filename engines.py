@@ -67,7 +67,11 @@ def validate_extracted(value):
     return value
 
 class EngineManager:
-    def __init__(self, base: Path, data: Path):
+    def __init__(self, base: Path, data: Path, *, owned_port=1235):
+        if not isinstance(owned_port, int) or not 1024 <= owned_port <= 65535:
+            raise ValueError("専用エンジンのポート番号が不正です。")
+        self.owned_port = owned_port
+        self.owned_endpoint = f"http://127.0.0.1:{owned_port}/v1"
         self.base, self.data = base, data
         self.runtime = base / ".runtime" / "bonsai"
         self.server = None
@@ -131,7 +135,7 @@ class EngineManager:
             return []
 
     def headers_for(self, endpoint):
-        if endpoint == PROFILES["bonsai"]["endpoint"] and self.key_path.is_file():
+        if endpoint == self.owned_endpoint and self.key_path.is_file():
             return {"Authorization": "Bearer " + self.key_path.read_text(encoding="ascii").strip()}
         return {}
 
@@ -197,8 +201,7 @@ class EngineManager:
             raise RuntimeError("このモデルを準備できません。READMEの導入手順を確認してください。")
         config = dict(self.configs()[profile])
         if profile == "bonsai" or self.standalone or profile in self.catalog.items:
-            if self.standalone or profile in self.catalog.items:
-                config["endpoint"] = PROFILES["bonsai"]["endpoint"]
+            config["endpoint"] = self.owned_endpoint
             if self.server is not None and self.server.poll() is None and config["model"] in self._model_ids(config["endpoint"]):
                 if not self.standalone:
                     self._unload_managed_lms()
@@ -207,8 +210,8 @@ class EngineManager:
             # Refuse to launch over an unrelated service on our dedicated port.
             import socket
             with socket.socket() as connection:
-                if connection.connect_ex(("127.0.0.1", 1235)) == 0:
-                    raise RuntimeError("ポート1235を別のサーバーが使用しています。")
+                if connection.connect_ex(("127.0.0.1", self.owned_port)) == 0:
+                    raise RuntimeError(f"ポート{self.owned_port}を別のサーバーが使用しています。")
             model = self.model_path(profile)
             manifest = json.loads((self.runtime / "manifest.json").read_text(encoding="utf-8"))
             entry = next((item for item in manifest["files"] if item["name"] == model.name), None)
@@ -220,7 +223,7 @@ class EngineManager:
             if not self.key_path.is_file():
                 self.key_path.write_text(secrets.token_urlsafe(32) + "\n", encoding="ascii")
             self.log = BoundedLog(self.data / ("engine-server.log" if self.standalone else "bonsai-server.log"))
-            arguments = [str(self.runtime / "bin/llama-server.exe"), "-m", str(model), "--host", "127.0.0.1", "--port", "1235",
+            arguments = [str(self.runtime / "bin/llama-server.exe"), "-m", str(model), "--host", "127.0.0.1", "--port", str(self.owned_port),
                          "--alias", config["model"], "-ngl", "99", "-fa", "on", "-c", str(config["context_length"]), "-np", "1", "--jinja",
                          "--temp", "0.7", "--top-p", "0.8", "--top-k", "20", "--min-p", "0", "--reasoning-budget", "1024",
                          "--api-key-file", str(self.key_path), "--cors-origins", "http://127.0.0.1:8765", "--no-webui"]
