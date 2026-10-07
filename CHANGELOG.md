@@ -1,5 +1,15 @@
 # 更新履歴
 
+## 2.1.0 — 2026-10-07
+
+- Windows上端コンパニオン、処理状況と最後の作業、通常画面への切り替え、Ctrl+Alt+Space、表示モードの保存。
+- 単一の所有プロセスで2ウィンドウを管理し、どちらの終了もAI/HTTP/録音を停止。起動直後の二次WebView初期化待ちを防止。
+- GitHub、Google（Gmail/Calendar/Drive/YouTube）、Notion、Instagram、TikTokの明示的なデータ取得。OpenAI/Gemini/ClaudeのAPI問い合わせ。
+- Windows DPAPIによる認証情報保存、Google OAuthのPKCE/一回限りのstate/5分の期限、認証情報を含めないバックアップ。
+- 外部へのIssue投稿/Gmail下書き保存にプレビュー、確認、一回限りの実行ID。メールは送信しない。
+- 動画リンクの公開情報取得と取得不能時の参照リンク、ローカルMP4/MOV/MKVの音声認識。
+- ストリーム描画をrequestAnimationFrameでまとめ、生成中の全体Markdown再解析を廃止。既存の下書き・会話・モデルを保持。
+
 ## 2.0.0 — 2026-10-07
 
 - モデル別設定、入力範囲・会話範囲のプレビュー、実モデルのトークン計測、要約して続ける機能。

@@ -29,6 +29,9 @@ async function fixture(t, preferences) {
   w.matchMedia = () => ({ matches: false, addEventListener() {} });
   w.TextDecoder = TextDecoder;
   w.AbortController = AbortController;
+  w.requestAnimationFrame = (callback) =>
+    setImmediate(() => callback(w.performance.now()));
+  w.cancelAnimationFrame = clearImmediate;
   w.HTMLDialogElement.prototype.showModal = function () {
     this.open = true;
   };
@@ -88,6 +91,28 @@ async function fixture(t, preferences) {
         endpoint: settings.endpoint,
       });
     if (url === "/api/profiles") return result([]);
+    if (url === "/api/connections")
+      return result({
+        services: [
+          { id: "github", name: "GitHub", connected: true, account: "fixture" },
+          ...["gmail", "calendar", "drive", "youtube"].map((id) => ({
+            id,
+            name: id,
+            connected: false,
+          })),
+        ],
+        encrypted: true,
+      });
+    if (url === "/api/connections/query")
+      return result({
+        items: [
+          {
+            title: "fixture issue",
+            url: "javascript:alert(1)",
+            text: "untrusted <script>evil</script>",
+          },
+        ],
+      });
     if (url.startsWith("/api/messages"))
       return result(
         messages[new URL(url, w.location).searchParams.get("id")] || [],
@@ -197,6 +222,7 @@ async function fixture(t, preferences) {
     "app.js",
     "tools.js",
     "extensions.js",
+    "connections.js",
   ])
     vm.runInContext(fs.readFileSync(path.join(web, script), "utf8"), context, {
       filename: script,
@@ -270,6 +296,65 @@ test("short stream phases update immediately, then controls recover", async (t) 
       .textContent,
     "答え",
   );
+});
+
+test("service retrieval requires consent; untrusted results become an explicit draft", async (t) => {
+  const f = await fixture(t);
+  assert.equal(f.document.querySelector("#companion-open").hidden, true);
+  await f.evaluate("openServices()");
+  const card = [...f.document.querySelectorAll(".tool-card")].find(
+    (c) => c.querySelector("h3")?.textContent === "GitHub",
+  );
+  const get = f.button("取得", card);
+  get.click();
+  await tick();
+  assert.equal(
+    f.calls.filter((c) => c.url === "/api/connections/query").length,
+    0,
+  );
+  card.querySelector("input[type=checkbox]").checked = true;
+  get.click();
+  await until(() => f.calls.some((c) => c.url === "/api/connections/query"));
+  await tick();
+  const result = [...f.document.querySelectorAll("dialog")].find(
+    (d) => d.querySelector("h2")?.textContent === "取得内容を確認",
+  );
+  assert.equal(result.querySelectorAll("a").length, 0);
+  assert.equal(result.querySelectorAll("script").length, 0);
+  f.document.querySelector("#prompt").value = "元の下書き";
+  f.button("この内容を会話に添付", result).click();
+  await tick();
+  assert.match(f.document.querySelector("#prompt").value, /元の下書き/);
+  assert.match(
+    f.document.querySelector("#prompt").value,
+    /外部サービスの参照データ/,
+  );
+  assert.equal(f.calls.filter((c) => c.url === "/api/chat").length, 0);
+});
+
+test("streaming keeps a stable text node and parses Markdown only on completion", async (t) => {
+  const f = await fixture(t);
+  const output = f.document.querySelector(".message:last-child");
+  f.evaluate(
+    "window.markdownCalls=0;const originalMarkdown=markdown;markdown=(text)=>{window.markdownCalls++;return originalMarkdown(text)}",
+  );
+  f.evaluate(
+    "window.streamFixture={role:'assistant',content:'',metadata:{mode:'chat'}}",
+  );
+  f.evaluate(
+    "updateMessage(document.querySelector('.message:last-child'),streamFixture,true)",
+  );
+  const text = output.querySelector(".live-text").firstChild;
+  f.evaluate(
+    "for(let i=0;i<1000;i++){streamFixture.content+='abc';updateMessage(document.querySelector('.message:last-child'),streamFixture,true)}",
+  );
+  assert.equal(output.querySelector(".live-text").firstChild, text);
+  assert.equal(text.data.length, 3000);
+  assert.equal(f.w.markdownCalls, 0);
+  f.evaluate(
+    "updateMessage(document.querySelector('.message:last-child'),streamFixture,false)",
+  );
+  assert.equal(f.w.markdownCalls, 1);
 });
 
 test("appearance persists and shortcuts focus search/open settings", async (t) => {

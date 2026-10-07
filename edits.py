@@ -141,6 +141,8 @@ def apply_batch(application, message_id, indices, hunks=None):
                 committed = db.execute("SELECT COUNT(*) FROM changes WHERE batch=?", (batch,)).fetchone()[0] == len(prepared)
             if committed or all(not Path(item["path"]).exists() if item["created_file"] else sha(Path(item["path"]).read_bytes()) == item["before_hash"] for item in prepared):
                 journal.unlink(missing_ok=True)
+        with application.active_lock:
+            application.last_activity = {"summary": f"{len(prepared)}ファイルの変更を反映しました。変更前のバックアップを保存済みです。", "files": [Path(item["path"]).name for item in prepared], "verification": " / ".join(dict.fromkeys(item["check"] for item in prepared)) + "。テストは未実行です。"}
         return {"batch_id": batch, "change_id": prepared[0]["id"], "changes": [{"id":item["id"], "path":item["path"], "check":item["check"]} for item in prepared],
                 "message": f"{len(prepared)}ファイルの変更を検証し、バックアップを保存して反映しました。"}
 

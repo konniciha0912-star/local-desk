@@ -390,6 +390,26 @@ function messageElement(message, streaming = false) {
 }
 function updateMessage(element, message, streaming = false) {
   const body = element.querySelector(".message-content");
+  if (streaming) {
+    // Keep one text node during generation. Markdown parsing/highlighting runs
+    // once on completion instead of replacing the entire tree on each delta.
+    let live = body.querySelector(".live-text");
+    if (!live) {
+      body.replaceChildren();
+      live = node("div", "live-text");
+      live.append(document.createTextNode(""));
+      body.append(live);
+    }
+    const metadata = message.metadata || {};
+    live.firstChild.data =
+      metadata.mode === "edit"
+        ? "修正案を作成しています…"
+        : message.content ||
+          (metadata.reasoning
+            ? "モデルが考えています…"
+            : "入力を読み込んでいます…");
+    return;
+  }
   body.replaceChildren();
   const metadata = message.metadata || {};
   if (metadata.reasoning) {
@@ -799,7 +819,15 @@ async function send(event, forcePreview = false) {
     1000,
   );
   let completed = false;
-  let lastRender = 0;
+  let renderFrame = null;
+  const scheduleRender = () => {
+    if (renderFrame !== null) return;
+    renderFrame = requestAnimationFrame(() => {
+      renderFrame = null;
+      updateMessage(output, answer, true);
+      followResponse();
+    });
+  };
   try {
     const response = await fetch("/api/chat", {
       method: "POST",
@@ -849,11 +877,7 @@ async function send(event, forcePreview = false) {
           answer.content += data.content || "";
           answer.metadata.reasoning =
             (answer.metadata.reasoning || "") + (data.reasoning || "");
-          if (performance.now() - lastRender > 100) {
-            updateMessage(output, answer, true);
-            followResponse();
-            lastRender = performance.now();
-          }
+          scheduleRender();
         } else if (eventName === "error") {
           answer.metadata.error = data.error;
           toast(data.error);
@@ -877,6 +901,7 @@ async function send(event, forcePreview = false) {
       toast(error.message);
     }
   } finally {
+    if (renderFrame !== null) cancelAnimationFrame(renderFrame);
     clearInterval(ticker);
     $("generation-info").textContent = "";
     setBusy(false);
@@ -913,6 +938,7 @@ async function init() {
   state.token = boot.token;
   state.settings = boot.settings;
   state.desktop = boot.desktop;
+  document.dispatchEvent(new CustomEvent("local-desk-ready"));
   if (boot.notices?.length) toast(boot.notices.join(" "));
   $("model-label").textContent = state.settings.model;
   const modelRefresh = refreshModels();
@@ -941,6 +967,16 @@ async function init() {
   }
 }
 on("new-chat", "click", newConversation);
+window.addEventListener("local-desk-conversation", async (event) => {
+  if (typeof event.detail !== "string" || state.busy || state.switching) return;
+  try {
+    await refreshConversations();
+    if (state.conversations.some((item) => item.id === event.detail))
+      await openConversation(event.detail);
+  } catch (error) {
+    toast(error.message);
+  }
+});
 on("composer", "submit", send);
 on("prompt", "keydown", (event) => {
   if (

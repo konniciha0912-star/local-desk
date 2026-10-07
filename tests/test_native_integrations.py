@@ -14,6 +14,28 @@ import app
 from desktop import DesktopSession
 
 class NativeIntegrationTests(unittest.TestCase):
+    def test_companion_routes_are_authenticated_and_cancel_owned_active_request(self):
+        import urllib.error
+        with tempfile.TemporaryDirectory() as temporary:
+            server=app.make_server(0,Path(temporary));thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
+            base=f'http://127.0.0.1:{server.server_port}';opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
+            try:
+                with self.assertRaises(urllib.error.HTTPError) as denied:opener.open(base+'/api/activity')
+                self.assertEqual(denied.exception.code,403);denied.exception.close()
+                def post(route,body,origin=None):
+                    headers={'X-App-Token':server.application.token,'Content-Type':'application/json'}
+                    if origin:headers['Origin']=origin
+                    return opener.open(urllib.request.Request(base+route,data=json.dumps(body).encode(),headers=headers))
+                server.application.desktop_controller=Mock()
+                server.application.desktop_controller.action.return_value={'mode':'companion','expanded':True}
+                with self.assertRaises(urllib.error.HTTPError) as denied:post('/api/desktop',{'action':'expand'},'https://evil.test')
+                self.assertEqual(denied.exception.code,403);denied.exception.close();server.application.desktop_controller.action.assert_not_called()
+                with post('/api/desktop',{'action':'expand'}) as response:self.assertTrue(json.load(response)['expanded'])
+                cancelled=threading.Event();server.application.active={'fixture':{'cancel':cancelled}}
+                with post('/api/cancel',{}) as response:self.assertTrue(json.load(response)['ok'])
+                self.assertTrue(cancelled.is_set())
+            finally:server.shutdown();thread.join(3);server.server_close();server.application.connections.close()
+
     def test_picker_and_clipboard_only_run_for_explicit_authenticated_requests(self):
         with tempfile.TemporaryDirectory() as temporary:
             server=app.make_server(0,Path(temporary)/'data')

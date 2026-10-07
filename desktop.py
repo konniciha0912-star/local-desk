@@ -25,7 +25,8 @@ def validate_geometry(value):
         raise ValueError("Invalid window geometry")
     result = {"width": max(760, min(2560, int(value.get("width", 1180)))),
               "height": max(560, min(1600, int(value.get("height", 800)))),
-              "maximized": bool(value.get("maximized", False))}
+              "maximized": bool(value.get("maximized", False)),
+              "presentation": "companion" if value.get("presentation") == "companion" else "normal"}
     for key in ["x", "y"]:
         number = value.get(key)
         result[key] = int(number) if number is not None and -32768 <= int(number) <= 32768 else None
@@ -63,8 +64,10 @@ class SingleInstance:
         user.FindWindowW.restype = wintypes.HWND
         user.ShowWindow.argtypes = [wintypes.HWND, ctypes.c_int]
         user.SetForegroundWindow.argtypes = [wintypes.HWND]
+        user.IsWindowVisible.argtypes = [wintypes.HWND]
         for _ in range(20):
-            window = user.FindWindowW(None, TITLE)
+            bar = user.FindWindowW(None, "Local Desk — 上端バー")
+            window = bar if bar and user.IsWindowVisible(bar) else user.FindWindowW(None, TITLE)
             if window:
                 user.ShowWindow(window, 9)
                 user.SetForegroundWindow(window)
@@ -125,6 +128,8 @@ class DesktopSession:
         self.ready = threading.Event()
         self.worker = None
         self.http_thread = None
+        self.companion = None
+        self.shortcut = None
 
     def bind_drop(self):
         if self.stopping.is_set() or self.window.get_current_url() != f"http://127.0.0.1:{self.server.server_port}/":
@@ -164,14 +169,26 @@ class DesktopSession:
             return
         self.http_thread = threading.Thread(target=self.server.serve_forever, kwargs={"poll_interval": 0.1}, daemon=True)
         self.http_thread.start()
-        self.window.load_url(f"http://127.0.0.1:{self.server.server_port}")
         self.ready.set()
+        self.window.load_url(f"http://127.0.0.1:{self.server.server_port}")
+        if self.companion:
+            self.companion.bar.load_url(f"http://127.0.0.1:{self.server.server_port}/companion.html")
+        if self.companion:
+            from companion import Shortcut
+            self.shortcut = Shortcut(lambda: self.companion.action("normal" if self.companion.mode == "companion" else "expand"))
+            if not self.shortcut.start():
+                self.server.application.notices.append("Ctrl+Alt+Spaceは他のアプリが使用中のため、上端バーのボタンを使ってください。")
 
     def request_stop(self):
         self.server.application.recorder.stop(discard=True)
         self.stopping.set()
+        if self.shortcut:
+            self.shortcut.close()
         self.server.application.cancel_active()
         self.server.application.engines.request_shutdown()
+        connections = getattr(self.server.application, "connections", None)
+        if connections:
+            connections.close()
 
     def close(self):
         self.request_stop()
@@ -231,7 +248,7 @@ def main():
         height = max(560, min(1600, int(saved.get("height", 800))))
         window = webview.create_window(TITLE, html=loading_page(), width=width, height=height, min_size=(760, 560), text_select=True,
                                        x=saved.get("x"), y=saved.get("y"), maximized=bool(saved.get("maximized", False)))
-        geometry_state = {"width": width, "height": height, "x": saved.get("x"), "y": saved.get("y"), "maximized": bool(saved.get("maximized", False))}
+        geometry_state = {"width": width, "height": height, "x": saved.get("x"), "y": saved.get("y"), "maximized": bool(saved.get("maximized", False)), "presentation": saved.get("presentation", "normal")}
         def resized(w, h):
             if not geometry_state["maximized"]:
                 geometry_state.update(width=w, height=h)
@@ -252,6 +269,19 @@ def main():
             server.application.engines.standalone = True
             profile = args.profile or profile_for(server.application.settings) or "bonsai"
             session = DesktopSession(server, window, profile)
+            from companion import Companion, TITLE as BAR_TITLE, position
+            x, y, w, h = position(webview.screens, saved, 320, 68)
+            bar = webview.create_window(BAR_TITLE, html=loading_page("準備中"), width=w, height=h,
+                                       min_size=(280, 64), x=x, y=y, hidden=True, frameless=True,
+                                       easy_drag=False, resizable=False, on_top=True, focus=False,
+                                       background_color="#162c26", text_select=True)
+            controller = Companion(window, bar, session, geometry, geometry_state, webview.screens)
+            server.application.desktop_controller = controller
+            session.companion = controller
+            window.events.minimized += lambda: setattr(controller, "minimized", True)
+            bar.events.loaded += controller.loaded
+            window.events.closing += lambda: controller.closing(window)
+            bar.events.closing += lambda: controller.closing(bar)
             window.events.loaded += session.bind_drop
             window.events.closing += session.request_stop
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("LocalDesk.Desktop")

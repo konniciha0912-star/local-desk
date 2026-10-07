@@ -504,6 +504,49 @@ h1 {
   color: var(--muted);
   font-size: 13px;
 }
+.live-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.8;
+}
+.service-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 12px 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.service-consent input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  flex: 0 0 16px;
+  margin: 2px 0 0;
+}
+.service-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 8px 0;
+  background: var(--surface);
+}
+dialog[open] {
+  animation: dialog-enter 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes dialog-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
 .file-badges {
   display: flex;
   gap: 6px;
@@ -1183,7 +1226,25 @@ dialog::backdrop {
     max-width: 100%;
   }
 }
-:root .tool-card { border:1px solid var(--line); border-radius:12px; padding:16px; margin:12px 0; }
-:root .tool-field { display:block; margin:12px 0; }
-:root .tool-field input, :root .tool-field textarea { display:block; width:100%; margin-top:6px; }
-:root .search-excerpt { white-space:pre-wrap; overflow-wrap:anywhere; max-height:240px; overflow:auto; }
+:root .tool-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 12px 0;
+}
+:root .tool-field {
+  display: block;
+  margin: 12px 0;
+}
+:root .tool-field input,
+:root .tool-field textarea {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+}
+:root .search-excerpt {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 240px;
+  overflow: auto;
+}

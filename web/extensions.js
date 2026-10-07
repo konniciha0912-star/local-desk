@@ -158,7 +158,7 @@ importTool.content.append(
   node(
     "p",
     "field-hint",
-    "ファイルをこのPCで読み取り、内容を確認してから入力欄へ入れます。PDF・Word・画像（50MB以下）、音声（5分以下）。マイクは録音ボタンを押したときだけ使い、30秒で自動停止します。",
+    "ファイルをこのPCで読み取り、内容を確認してから入力欄へ入れます。PDF・Word・画像、音声・動画の音声（MP4/MOV/MKVなど、50MB以下・5分以下）。マイクは録音ボタンを押したときだけ使い、30秒で自動停止します。",
   ),
 );
 const importPath = toolField(importTool.content, "ファイルの絶対パス"),
