@@ -1,0 +1,74 @@
+{
+  "run": {
+    "id": 37568372504,
+    "status": "completed",
+    "conclusion": "success",
+    "commit": "b641550a0a3640d3c5488013b5594aa3fc779e83",
+    "url": "https://github.com/konniciha0912-star/local-desk/actions/runs/37568372504"
+  },
+  "jobs": [
+    {
+      "name": "desktop-dependencies",
+      "status": "completed",
+      "conclusion": "success",
+      "running": [],
+      "failed": []
+    },
+    {
+      "name": "core (ubuntu-latest, 3.14)",
+      "status": "completed",
+      "conclusion": "success",
+      "running": [],
+      "failed": []
+    },
+    {
+      "name": "core (windows-latest, 3.10)",
+      "status": "completed",
+      "conclusion": "success",
+      "running": [],
+      "failed": []
+    },
+    {
+      "name": "core (ubuntu-latest, 3.13)",
+      "status": "completed",
+      "conclusion": "success",
+      "running": [],
+      "failed": []
+    },
+    {
+      "name": "core (ubuntu-latest, 3.10)",
+      "status": "completed",
+      "conclusion": "success",
+      "running": [],
+      "failed": []
+    },
+    {
+      "name": "core (ubuntu-latest, 3.12)",
+      "status": "completed",
+      "conclusion": "success",
+      "running": [],
+      "failed": []
+    },
+    {
+      "name": "core (windows-latest, 3.14)",
+      "status": "completed",
+      "conclusion": "success",
+      "running": [],
+      "failed": []
+    },
+    {
+      "name": "core (windows-latest, 3.12)",
+      "status": "completed",
+      "conclusion": "success",
+      "running": [],
+      "failed": []
+    },
+    {
+      "name": "core (windows-latest, 3.13)",
+      "status": "completed",
+      "conclusion": "success",
+      "running": [],
+      "failed": []
+    }
+  ]
+}
