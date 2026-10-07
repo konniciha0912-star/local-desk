@@ -1,0 +1,6 @@
+* text=auto eol=lf
+# Preserve verified upstream bytes, including line endings.
+web/vendor/** -text
+*.png -text
+*.jpg -text
+*.ico -text

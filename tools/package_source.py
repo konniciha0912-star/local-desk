@@ -15,7 +15,7 @@ import_worker.py imports.py maintenance.py model_catalog.py persistence.py produ
 project_tests.py projects.py setup_bonsai.py setup_ocr.py setup_voice.py version.py web_sources.py
 Desktop.cmd Install.cmd Install-Desktop.ps1 Start-Bonsai.cmd Start.cmd Start.ps1
 Uninstall-Desktop.ps1 README.md LICENSE CHANGELOG.md THIRD_PARTY_NOTICES.md
-requirements-desktop.txt requirements-desktop.lock.txt .gitignore'''.split()
+requirements-desktop.txt requirements-desktop.lock.txt .gitignore .gitattributes'''.split()
 TREE_SUFFIXES = {
     'web': {'.js','.css','.html','.svg','.ico','.json','.txt'},
     'tests': {'.py','.cjs','.json'}, 'tools': {'.py'}, 'examples': {'.py','.md','.txt'},

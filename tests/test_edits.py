@@ -40,7 +40,7 @@ class EditBatchTests(unittest.TestCase):
         message = self.proposal([{"path":"a.py","old":"a = 1","new":"a = 10"}, {"path":"b.py","old":"c = 3","new":"c = 30"}])
         replace = Path.replace
         def failing(path, target):
-            if str(target) == str(self.b) and ".localdesk-" in path.name: raise OSError("simulated disk failure")
+            if Path(target).resolve() == self.b.resolve() and ".localdesk-" in path.name: raise OSError("simulated disk failure")
             return replace(path, target)
         with patch.object(Path, "replace", new=failing), self.assertRaises(OSError): apply_batch(self.application, message, [0,1])
         self.assertEqual(self.a.read_bytes(), b"a = 1\nb = 2\n")
